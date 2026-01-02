@@ -33,6 +33,12 @@ func newMultiModel(title string, devices []core.Device) multiModel {
 	in.Focus()
 	in.CharLimit = 256
 	in.Width = 30
+	// Avoid textinput treating Enter as submit; we want Enter to confirm selection.
+	// (bubbles/textinput has no EnterKeySubmits; keep behavior by handling Enter in Update.)
+
+	// Prevent textinput's suggestion navigation from stealing up/down.
+	in.KeyMap.NextSuggestion.SetKeys()
+	in.KeyMap.PrevSuggestion.SetKeys()
 
 	filteredByState := make([]core.Device, 0, len(devices))
 	for _, d := range devices {
@@ -84,6 +90,7 @@ func (m multiModel) Init() tea.Cmd {
 }
 
 func (m multiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// First handle key events we must own, before delegating to textinput.
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -91,8 +98,7 @@ func (m multiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.input.Width = min(50, max(20, msg.Width-10))
 		return m, nil
 	case tea.KeyMsg:
-		// Prefer KeyType-based handling for non-text keys so that focused textinput
-		// doesn't swallow them on some terminals.
+		// KeyType-based handling.
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			m.canceled = true
@@ -126,7 +132,7 @@ func (m multiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// Fallback for terminals that report keys as strings.
+		// Some terminals send space/j as runes; keep a string fallback.
 		switch msg.String() {
 		case "ctrl+c", "esc":
 			m.canceled = true
