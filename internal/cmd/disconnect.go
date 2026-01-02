@@ -6,13 +6,10 @@ import (
 
 	"github.com/fumihumi/bt-manage/internal/core"
 	"github.com/fumihumi/bt-manage/internal/output"
-	"github.com/fumihumi/bt-manage/internal/platform/macos/blueutil"
-	"github.com/fumihumi/bt-manage/internal/platform/tty"
-	"github.com/fumihumi/bt-manage/internal/tui/picker"
 	"github.com/spf13/cobra"
 )
 
-func newDisconnectCmd() *cobra.Command {
+func newDisconnectCmd(e env) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "disconnect [<Name>]",
 		Short: "Disconnect a Bluetooth device",
@@ -35,17 +32,17 @@ func newDisconnectCmd() *cobra.Command {
 				return err
 			}
 
-			isTTY := tty.IsInteractive()
+			isTTY := e.isTTY()
 			if interactive && !isTTY {
 				return fmt.Errorf("--interactive requires a TTY")
 			}
 
 			var pk core.PickerPort
 			if interactive && isTTY {
-				pk = picker.Picker{}
+				pk = e.picker
 			}
 
-			d := core.Disconnector{Bluetooth: blueutil.Client{}, Picker: pk}
+			d := core.Disconnector{Bluetooth: e.bluetooth, Picker: pk}
 			selected, err := d.DisconnectByNameOrInteractive(context.Background(), core.DisconnectParams{
 				Name:        name,
 				Exact:       exact,

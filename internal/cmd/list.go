@@ -6,11 +6,10 @@ import (
 
 	"github.com/fumihumi/bt-manage/internal/core"
 	"github.com/fumihumi/bt-manage/internal/output"
-	"github.com/fumihumi/bt-manage/internal/platform/macos/blueutil"
 	"github.com/spf13/cobra"
 )
 
-func newListCmd() *cobra.Command {
+func newListCmd(e env) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List Bluetooth devices",
@@ -23,7 +22,7 @@ func newListCmd() *cobra.Command {
 				return err
 			}
 
-			l := core.Lister{Bluetooth: blueutil.Client{}}
+			l := core.Lister{Bluetooth: e.bluetooth}
 			devices, err := l.ListDevices(context.Background())
 			if err != nil {
 				return err
