@@ -1,8 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"os"
 
+	"github.com/fumihumi/bt-manage/internal/core"
+	"github.com/fumihumi/bt-manage/internal/platform/macos/blueutil"
+	"github.com/fumihumi/bt-manage/internal/platform/ui/nopicker"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +21,28 @@ func newConnectCmd() *cobra.Command {
 			if len(args) == 1 {
 				name = args[0]
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "TODO: connect %s\n", name)
+
+			exact, _ := cmd.Flags().GetBool("exact")
+			interactive, _ := cmd.Flags().GetBool("interactive")
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+
+			c := core.Connector{Bluetooth: blueutil.Client{}, Picker: nopicker.Picker{}}
+			selected, err := c.ConnectByNameOrInteractive(context.Background(), core.ConnectParams{
+				Name:        name,
+				Exact:       exact,
+				Interactive: interactive,
+				IsTTY:       cmd.OutOrStdout() == os.Stdout,
+				DryRun:      dryRun,
+			})
+			if err != nil {
+				return err
+			}
+
+			if dryRun {
+				fmt.Fprintf(cmd.OutOrStdout(), "DRY-RUN: connect %s (%s)\n", selected.Name, selected.Address)
+				return nil
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "connected: %s (%s)\n", selected.Name, selected.Address)
 			return nil
 		},
 	}
