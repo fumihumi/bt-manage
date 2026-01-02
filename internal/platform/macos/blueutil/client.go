@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"time"
 
 	"github.com/fumihumi/bt-manage/internal/core"
 )
@@ -46,8 +47,10 @@ func (c Client) List(ctx context.Context) ([]core.Device, error) {
 	if _, err := lookPath(c.bin()); err != nil {
 		return nil, core.ErrDependencyMissing{Dependency: c.bin()}
 	}
-	c.logf("blueutil: %s --paired --format json\n", c.bin())
+	start := time.Now()
+	c.logf("blueutil: start=%s %s --paired --format json\n", start.Format("15:04:05.000"), c.bin())
 	stdout, _, err := c.execPort().Run(ctx, c.bin(), "--paired", "--format", "json")
+	c.logf("blueutil: done  start=%s elapsed=%s\n", start.Format("15:04:05.000"), time.Since(start).Truncate(time.Millisecond))
 	if err != nil {
 		return nil, c.mapExecErr(err)
 	}
@@ -59,8 +62,10 @@ func (c Client) Connect(ctx context.Context, address string) error {
 		return core.ErrDependencyMissing{Dependency: c.bin()}
 	}
 	addr := denormalizeAddress(address)
-	c.logf("blueutil: %s --connect %s\n", c.bin(), addr)
+	start := time.Now()
+	c.logf("blueutil: start=%s %s --connect %s\n", start.Format("15:04:05.000"), c.bin(), addr)
 	_, _, err := c.execPort().Run(ctx, c.bin(), "--connect", addr)
+	c.logf("blueutil: done  start=%s --connect %s elapsed=%s\n", start.Format("15:04:05.000"), addr, time.Since(start).Truncate(time.Millisecond))
 	if err != nil {
 		return c.mapExecErr(err)
 	}
@@ -72,8 +77,10 @@ func (c Client) Disconnect(ctx context.Context, address string) error {
 		return core.ErrDependencyMissing{Dependency: c.bin()}
 	}
 	addr := denormalizeAddress(address)
-	c.logf("blueutil: %s --disconnect %s\n", c.bin(), addr)
+	start := time.Now()
+	c.logf("blueutil: start=%s %s --disconnect %s\n", start.Format("15:04:05.000"), c.bin(), addr)
 	_, _, err := c.execPort().Run(ctx, c.bin(), "--disconnect", addr)
+	c.logf("blueutil: done  start=%s --disconnect %s elapsed=%s\n", start.Format("15:04:05.000"), addr, time.Since(start).Truncate(time.Millisecond))
 	if err != nil {
 		return c.mapExecErr(err)
 	}

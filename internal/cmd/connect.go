@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/fumihumi/bt-manage/internal/core"
@@ -17,8 +20,8 @@ func newConnectCmd(e env) *cobra.Command {
 		Long:  "Connect to a Bluetooth device. Output is a single device in the selected format (json is a 1-element array, consistent with 'list').",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
+			// Do NOT apply timeout to interactive (TUI) selection.
+			baseCtx := context.Background()
 
 			name := ""
 			if len(args) == 1 {
@@ -61,12 +64,13 @@ func newConnectCmd(e env) *cobra.Command {
 					return fmt.Errorf("--multi requires a TTY")
 				}
 
-				devices, err := e.bluetooth.List(ctx)
+				// List/Pick can take time (user interaction); no timeout.
+				devices, err := e.bluetooth.List(baseCtx)
 				if err != nil {
 					return err
 				}
 
-				selected, err := pk.PickDevices(ctx, "Connect", devices)
+				selected, err := pk.PickDevices(baseCtx, "Connect", devices)
 				if err != nil {
 					return err
 				}
@@ -82,16 +86,47 @@ func newConnectCmd(e env) *cobra.Command {
 					}
 				}
 
-				// Progress indicator to stderr.
 				fmt.Fprintln(cmd.ErrOrStderr(), "Connecting...")
-				for _, d := range selected {
-					if ctx.Err() != nil {
-						return fmt.Errorf("connect timed out")
+
+				type result struct {
+					d   core.Device
+					err error
+				}
+				results := make([]result, 0, len(selected))
+				var mu sync.Mutex
+
+				var wg sync.WaitGroup
+				wg.Add(len(selected))
+				for _, dev := range selected {
+					dev := dev
+					go func() {
+						defer wg.Done()
+
+						fmt.Fprintf(cmd.ErrOrStderr(), "- %s (%s)\n", dev.Name, dev.Address)
+
+						// Per-device timeout (independent).
+						dctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+						defer cancel()
+						err := e.bluetooth.Connect(dctx, dev.Address)
+						if err == nil {
+							fmt.Fprintf(cmd.ErrOrStderr(), "  ok: connected %s (%s)\n", dev.Name, dev.Address)
+						}
+
+						mu.Lock()
+						results = append(results, result{d: dev, err: err})
+						mu.Unlock()
+					}()
+				}
+				wg.Wait()
+
+				var failed []string
+				for _, r := range results {
+					if r.err != nil {
+						failed = append(failed, fmt.Sprintf("%s (%s): %v", r.d.Name, r.d.Address, r.err))
 					}
-					fmt.Fprintf(cmd.ErrOrStderr(), "- %s (%s)\n", d.Name, d.Address)
-					if err := e.bluetooth.Connect(ctx, d.Address); err != nil {
-						return err
-					}
+				}
+				if len(failed) > 0 {
+					return errors.New("some connects failed: " + strings.Join(failed, "; "))
 				}
 
 				switch format {
@@ -105,6 +140,11 @@ func newConnectCmd(e env) *cobra.Command {
 			}
 
 			// Single-select (existing behaviour).
+			var ctx context.Context
+			var cancel func()
+			ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
 			c := core.Connector{Bluetooth: e.bluetooth, Picker: pk}
 			selected, err := c.ConnectByNameOrInteractive(ctx, core.ConnectParams{
 				Name:        name,
