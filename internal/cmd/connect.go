@@ -58,15 +58,8 @@ func newConnectCmd() *cobra.Command {
 			// For structured formats, print the selected device.
 			switch format {
 			case output.FormatTSV:
-				if dryRun {
-					fmt.Fprintln(cmd.OutOrStdout(), "DRY-RUN")
-				}
 				return output.WriteTSV(cmd.OutOrStdout(), []core.Device{selected}, true)
 			case output.FormatJSON:
-				if dryRun {
-					// keep dry-run as metadata + payload with same schema
-					fmt.Fprintln(cmd.OutOrStdout(), "DRY-RUN")
-				}
 				return output.WriteJSON(cmd.OutOrStdout(), []core.Device{selected})
 			default:
 				return fmt.Errorf("unsupported format")

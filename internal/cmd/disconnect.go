@@ -57,14 +57,8 @@ func newDisconnectCmd() *cobra.Command {
 
 			switch format {
 			case output.FormatTSV:
-				if dryRun {
-					fmt.Fprintln(cmd.OutOrStdout(), "DRY-RUN")
-				}
 				return output.WriteTSV(cmd.OutOrStdout(), []core.Device{selected}, true)
 			case output.FormatJSON:
-				if dryRun {
-					fmt.Fprintln(cmd.OutOrStdout(), "DRY-RUN")
-				}
 				return output.WriteJSON(cmd.OutOrStdout(), []core.Device{selected})
 			default:
 				return fmt.Errorf("unsupported format")
