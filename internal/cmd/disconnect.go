@@ -27,6 +27,7 @@ func newDisconnectCmd() *cobra.Command {
 			interactive, _ := cmd.Flags().GetBool("interactive")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			formatStr, _ := cmd.Flags().GetString("format")
+			noHeader, _ := cmd.Flags().GetBool("no-header")
 
 			format, err := output.ParseFormat(formatStr)
 			if err != nil {
@@ -57,7 +58,7 @@ func newDisconnectCmd() *cobra.Command {
 
 			switch format {
 			case output.FormatTSV:
-				return output.WriteTSV(cmd.OutOrStdout(), []core.Device{selected}, true)
+				return output.WriteTSV(cmd.OutOrStdout(), []core.Device{selected}, !noHeader)
 			case output.FormatJSON:
 				return output.WriteJSON(cmd.OutOrStdout(), []core.Device{selected})
 			default:
@@ -70,6 +71,7 @@ func newDisconnectCmd() *cobra.Command {
 	cmd.Flags().Bool("interactive", false, "Always use interactive picker (TTY required)")
 	cmd.Flags().Bool("dry-run", false, "Print what would be executed without disconnecting")
 	cmd.Flags().String("format", "tsv", "Output format (tsv|json)")
+	cmd.Flags().Bool("no-header", false, "Do not print header (tsv only)")
 
 	return cmd
 }
