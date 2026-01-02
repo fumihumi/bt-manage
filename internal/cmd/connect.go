@@ -70,7 +70,7 @@ func newConnectCmd() *cobra.Command {
 
 	cmd.Flags().Bool("exact", false, "Match device name exactly")
 	cmd.Flags().Bool("interactive", false, "Always use interactive picker (TTY required)")
-	cmd.Flags().Bool("dry-run", false, "Print what would be executed without connecting")
+	cmd.Flags().Bool("dry-run", false, "Do not connect; only resolve and print the target device")
 	cmd.Flags().String("format", "tsv", "Output format (tsv|json)")
 	cmd.Flags().Bool("no-header", false, "Do not print header (tsv only)")
 

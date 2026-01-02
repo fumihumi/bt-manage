@@ -15,14 +15,14 @@ func userFacingError(err error) error {
 	var nf core.ErrNotFound
 	if errors.As(err, &nf) {
 		if nf.Query == "" {
-			return fmt.Errorf("no device selected")
+			return fmt.Errorf("no device selected (specify a name, or use --interactive in a TTY)")
 		}
 		return fmt.Errorf("no device matched %q", nf.Query)
 	}
 
 	var am core.ErrAmbiguous
 	if errors.As(err, &am) {
-		const hint = "try --exact or use --interactive to choose"
+		const hint = "try --exact, or use --interactive (TTY only) to choose"
 		if am.Query == "" {
 			return fmt.Errorf("device selection is ambiguous (%s)", hint)
 		}
