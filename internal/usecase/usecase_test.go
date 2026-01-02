@@ -1,13 +1,15 @@
-package core
+package usecase
 
 import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/fumihumi/bt-manage/internal/domain"
 )
 
 type fakeBluetooth struct {
-	devices []Device
+	devices []domain.Device
 
 	connected    []string
 	disconnected []string
@@ -17,11 +19,11 @@ type fakeBluetooth struct {
 	disconnectErr error
 }
 
-func (f *fakeBluetooth) List(ctx context.Context) ([]Device, error) {
+func (f *fakeBluetooth) List(ctx context.Context) ([]domain.Device, error) {
 	if f.listErr != nil {
 		return nil, f.listErr
 	}
-	return append([]Device(nil), f.devices...), nil
+	return append([]domain.Device(nil), f.devices...), nil
 }
 
 func (f *fakeBluetooth) Connect(ctx context.Context, address string) error {
@@ -41,30 +43,34 @@ func (f *fakeBluetooth) Disconnect(ctx context.Context, address string) error {
 }
 
 type fakePicker struct {
-	picked Device
+	picked domain.Device
 	err    error
-	calls  int
+
+	calls int
+	lastN int
 }
 
-func (p *fakePicker) PickDevice(ctx context.Context, title string, devices []Device) (Device, error) {
+func (p *fakePicker) PickDevice(ctx context.Context, title string, devices []domain.Device) (domain.Device, error) {
 	p.calls++
+	p.lastN = len(devices)
 	if p.err != nil {
-		return Device{}, p.err
+		return domain.Device{}, p.err
 	}
 	return p.picked, nil
 }
 
-func (p *fakePicker) PickDevices(ctx context.Context, title string, devices []Device) ([]Device, error) {
+func (p *fakePicker) PickDevices(ctx context.Context, title string, devices []domain.Device) ([]domain.Device, error) {
 	p.calls++
+	p.lastN = len(devices)
 	if p.err != nil {
 		return nil, p.err
 	}
-	return []Device{p.picked}, nil
+	return []domain.Device{p.picked}, nil
 }
 
 func TestConnectByNameOrInteractive(t *testing.T) {
 	ctx := context.Background()
-	devices := []Device{
+	devices := []domain.Device{
 		{Name: "MX Keys", Address: "AA"},
 		{Name: "MX Master", Address: "BB"},
 		{Name: "AirPods", Address: "CC"},
@@ -106,8 +112,8 @@ func TestConnectByNameOrInteractive(t *testing.T) {
 			wantPickCalls: 1,
 		},
 		{
-			name:    "dry-run does not connect",
-			p:       ConnectParams{Name: "Air", DryRun: true},
+			name:          "dry-run does not connect",
+			p:             ConnectParams{Name: "Air", DryRun: true},
 			wantConnected: nil,
 		},
 		{
@@ -120,14 +126,14 @@ func TestConnectByNameOrInteractive(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			bt := &fakeBluetooth{devices: devices}
-			pk := &fakePicker{picked: Device{Name: "MX Master", Address: "BB"}}
-			c := Connector{Bluetooth: bt, Picker: pk}
+			pk := &fakePicker{picked: domain.Device{Name: "MX Master", Address: "BB"}}
+			uc := ConnectUseCase{Bluetooth: bt, Picker: pk}
 
 			if tc.name == "picker cancel propagates" {
 				pk.err = ErrCanceled{}
 			}
 
-			_, err := c.ConnectByNameOrInteractive(ctx, tc.p)
+			_, err := uc.ConnectByNameOrInteractive(ctx, tc.p)
 			if tc.wantErr != nil {
 				if err == nil {
 					t.Fatalf("expected error")
@@ -174,16 +180,16 @@ func TestConnectByNameOrInteractive(t *testing.T) {
 
 func TestDisconnectByNameOrInteractive(t *testing.T) {
 	ctx := context.Background()
-	devices := []Device{
+	devices := []domain.Device{
 		{Name: "MX Keys", Address: "AA"},
 		{Name: "AirPods", Address: "CC"},
 	}
 
 	bt := &fakeBluetooth{devices: devices}
-	pk := &fakePicker{picked: Device{Name: "AirPods", Address: "CC"}}
-	d := Disconnector{Bluetooth: bt, Picker: pk}
+	pk := &fakePicker{picked: domain.Device{Name: "AirPods", Address: "CC"}}
+	uc := DisconnectUseCase{Bluetooth: bt, Picker: pk}
 
-	_, err := d.DisconnectByNameOrInteractive(ctx, DisconnectParams{Name: "", IsTTY: true})
+	_, err := uc.DisconnectByNameOrInteractive(ctx, DisconnectParams{Name: "", IsTTY: true})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

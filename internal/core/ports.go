@@ -10,4 +10,5 @@ type BluetoothPort interface {
 
 type PickerPort interface {
 	PickDevice(ctx context.Context, title string, devices []Device) (Device, error)
+	PickDevices(ctx context.Context, title string, devices []Device) ([]Device, error)
 }

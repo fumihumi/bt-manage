@@ -77,6 +77,13 @@ bt-manage connect <name-or-prefix>
 - If `<name-or-prefix>` is omitted and stdin is a TTY, a TUI picker is shown.
 - If multiple devices match the prefix and stdin is a TTY, the picker is shown.
 
+Multi-select (interactive, space to toggle):
+
+```bash
+bt-manage connect --multi
+bt-manage connect -m
+```
+
 Output formats:
 
 ```bash
@@ -89,6 +96,13 @@ bt-manage connect <name-or-prefix> --no-header
 
 ```bash
 bt-manage disconnect <name-or-prefix>
+```
+
+Multi-select (interactive, space to toggle):
+
+```bash
+bt-manage disconnect --multi
+bt-manage disconnect -m
 ```
 
 Output formats:

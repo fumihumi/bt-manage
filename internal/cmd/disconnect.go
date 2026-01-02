@@ -23,9 +23,17 @@ func newDisconnectCmd(e env) *cobra.Command {
 
 			exact, _ := cmd.Flags().GetBool("exact")
 			interactive, _ := cmd.Flags().GetBool("interactive")
+			multi, _ := cmd.Flags().GetBool("multi")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			formatStr, _ := cmd.Flags().GetString("format")
 			noHeader, _ := cmd.Flags().GetBool("no-header")
+
+			if multi {
+				interactive = true
+				if name != "" {
+					return fmt.Errorf("--multi cannot be used with a name argument")
+				}
+			}
 
 			format, err := output.ParseFormat(formatStr)
 			if err != nil {
@@ -40,6 +48,48 @@ func newDisconnectCmd(e env) *cobra.Command {
 			var pk core.PickerPort
 			if interactive && isTTY {
 				pk = e.picker
+			}
+
+			if multi {
+				if pk == nil {
+					return fmt.Errorf("--multi requires a TTY")
+				}
+
+				devices, err := e.bluetooth.List(context.Background())
+				if err != nil {
+					return err
+				}
+
+				selected, err := pk.PickDevices(context.Background(), "Disconnect", devices)
+				if err != nil {
+					return err
+				}
+
+				if dryRun {
+					switch format {
+					case output.FormatTSV:
+						return output.WriteTSV(cmd.OutOrStdout(), selected, !noHeader)
+					case output.FormatJSON:
+						return output.WriteJSON(cmd.OutOrStdout(), selected)
+					default:
+						return fmt.Errorf("unsupported format")
+					}
+				}
+
+				for _, d := range selected {
+					if err := e.bluetooth.Disconnect(context.Background(), d.Address); err != nil {
+						return err
+					}
+				}
+
+				switch format {
+				case output.FormatTSV:
+					return output.WriteTSV(cmd.OutOrStdout(), selected, !noHeader)
+				case output.FormatJSON:
+					return output.WriteJSON(cmd.OutOrStdout(), selected)
+				default:
+					return fmt.Errorf("unsupported format")
+				}
 			}
 
 			d := core.Disconnector{Bluetooth: e.bluetooth, Picker: pk}
@@ -67,6 +117,7 @@ func newDisconnectCmd(e env) *cobra.Command {
 
 	cmd.Flags().BoolP("exact", "e", false, "Match device name exactly")
 	cmd.Flags().BoolP("interactive", "i", false, "Always use interactive picker (TTY required)")
+	cmd.Flags().BoolP("multi", "m", false, "Select multiple devices in the picker (implies --interactive; TTY only)")
 	cmd.Flags().BoolP("dry-run", "n", false, "Do not disconnect; only resolve and print the target device")
 	cmd.Flags().StringP("format", "f", "tsv", "Output format (tsv|json)")
 	cmd.Flags().BoolP("no-header", "H", false, "Do not print header (tsv only)")
