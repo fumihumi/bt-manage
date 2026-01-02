@@ -3,10 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/fumihumi/bt-manage/internal/core"
 	"github.com/fumihumi/bt-manage/internal/platform/macos/blueutil"
+	"github.com/fumihumi/bt-manage/internal/platform/tty"
 	"github.com/fumihumi/bt-manage/internal/platform/ui/nopicker"
 	"github.com/spf13/cobra"
 )
@@ -26,12 +26,17 @@ func newDisconnectCmd() *cobra.Command {
 			interactive, _ := cmd.Flags().GetBool("interactive")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 
+			isTTY := tty.IsInteractive()
+			if interactive && !isTTY {
+				return fmt.Errorf("--interactive requires a TTY")
+			}
+
 			d := core.Disconnector{Bluetooth: blueutil.Client{}, Picker: nopicker.Picker{}}
 			selected, err := d.DisconnectByNameOrInteractive(context.Background(), core.DisconnectParams{
 				Name:        name,
 				Exact:       exact,
 				Interactive: interactive,
-				IsTTY:       cmd.OutOrStdout() == os.Stdout,
+				IsTTY:       isTTY,
 				DryRun:      dryRun,
 			})
 			if err != nil {
