@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/fumihumi/bt-manage/internal/core"
 	"github.com/fumihumi/bt-manage/internal/output"
@@ -16,6 +17,9 @@ func newConnectCmd(e env) *cobra.Command {
 		Long:  "Connect to a Bluetooth device. Output is a single device in the selected format (json is a 1-element array, consistent with 'list').",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
 			name := ""
 			if len(args) == 1 {
 				name = args[0]
@@ -57,12 +61,12 @@ func newConnectCmd(e env) *cobra.Command {
 					return fmt.Errorf("--multi requires a TTY")
 				}
 
-				devices, err := e.bluetooth.List(context.Background())
+				devices, err := e.bluetooth.List(ctx)
 				if err != nil {
 					return err
 				}
 
-				selected, err := pk.PickDevices(context.Background(), "Connect", devices)
+				selected, err := pk.PickDevices(ctx, "Connect", devices)
 				if err != nil {
 					return err
 				}
@@ -78,8 +82,14 @@ func newConnectCmd(e env) *cobra.Command {
 					}
 				}
 
+				// Progress indicator to stderr.
+				fmt.Fprintln(cmd.ErrOrStderr(), "Connecting...")
 				for _, d := range selected {
-					if err := e.bluetooth.Connect(context.Background(), d.Address); err != nil {
+					if ctx.Err() != nil {
+						return fmt.Errorf("connect timed out")
+					}
+					fmt.Fprintf(cmd.ErrOrStderr(), "- %s (%s)\n", d.Name, d.Address)
+					if err := e.bluetooth.Connect(ctx, d.Address); err != nil {
 						return err
 					}
 				}
@@ -96,7 +106,7 @@ func newConnectCmd(e env) *cobra.Command {
 
 			// Single-select (existing behaviour).
 			c := core.Connector{Bluetooth: e.bluetooth, Picker: pk}
-			selected, err := c.ConnectByNameOrInteractive(context.Background(), core.ConnectParams{
+			selected, err := c.ConnectByNameOrInteractive(ctx, core.ConnectParams{
 				Name:        name,
 				Exact:       exact,
 				Interactive: interactive,

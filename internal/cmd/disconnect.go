@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/fumihumi/bt-manage/internal/core"
 	"github.com/fumihumi/bt-manage/internal/output"
@@ -16,6 +17,9 @@ func newDisconnectCmd(e env) *cobra.Command {
 		Long:  "Disconnect a Bluetooth device. Output is a single device in the selected format (json is a 1-element array, consistent with 'list').",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
 			name := ""
 			if len(args) == 1 {
 				name = args[0]
@@ -55,12 +59,12 @@ func newDisconnectCmd(e env) *cobra.Command {
 					return fmt.Errorf("--multi requires a TTY")
 				}
 
-				devices, err := e.bluetooth.List(context.Background())
+				devices, err := e.bluetooth.List(ctx)
 				if err != nil {
 					return err
 				}
 
-				selected, err := pk.PickDevices(context.Background(), "Disconnect", devices)
+				selected, err := pk.PickDevices(ctx, "Disconnect", devices)
 				if err != nil {
 					return err
 				}
@@ -76,8 +80,13 @@ func newDisconnectCmd(e env) *cobra.Command {
 					}
 				}
 
+				fmt.Fprintln(cmd.ErrOrStderr(), "Disconnecting...")
 				for _, d := range selected {
-					if err := e.bluetooth.Disconnect(context.Background(), d.Address); err != nil {
+					if ctx.Err() != nil {
+						return fmt.Errorf("disconnect timed out")
+					}
+					fmt.Fprintf(cmd.ErrOrStderr(), "- %s (%s)\n", d.Name, d.Address)
+					if err := e.bluetooth.Disconnect(ctx, d.Address); err != nil {
 						return err
 					}
 				}
@@ -93,7 +102,7 @@ func newDisconnectCmd(e env) *cobra.Command {
 			}
 
 			d := core.Disconnector{Bluetooth: e.bluetooth, Picker: pk}
-			selected, err := d.DisconnectByNameOrInteractive(context.Background(), core.DisconnectParams{
+			selected, err := d.DisconnectByNameOrInteractive(ctx, core.DisconnectParams{
 				Name:        name,
 				Exact:       exact,
 				Interactive: interactive,
