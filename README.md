@@ -46,6 +46,13 @@ bt-manage list --connected
 bt-manage list -c
 ```
 
+Print names only (one per line):
+
+```bash
+bt-manage list --names-only
+bt-manage list -N
+```
+
 Output formats:
 
 ```bash
