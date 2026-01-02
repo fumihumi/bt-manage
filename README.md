@@ -39,6 +39,13 @@ Move the resulting `bt-manage` binary to a directory in your `PATH`.
 bt-manage list
 ```
 
+Show connected devices only:
+
+```bash
+bt-manage list --connected
+bt-manage list -c
+```
+
 Output formats:
 
 ```bash
