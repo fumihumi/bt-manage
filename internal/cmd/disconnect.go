@@ -113,6 +113,11 @@ func newDisconnectCmd(e env) *cobra.Command {
 				return err
 			}
 
+			if !dryRun {
+				fmt.Fprintln(cmd.ErrOrStderr(), "Disconnecting...")
+				fmt.Fprintf(cmd.ErrOrStderr(), "- %s (%s)\n", selected.Name, selected.Address)
+			}
+
 			switch format {
 			case output.FormatTSV:
 				return output.WriteTSV(cmd.OutOrStdout(), []core.Device{selected}, !noHeader)

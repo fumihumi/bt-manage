@@ -117,6 +117,11 @@ func newConnectCmd(e env) *cobra.Command {
 				return err
 			}
 
+			if !dryRun {
+				fmt.Fprintln(cmd.ErrOrStderr(), "Connecting...")
+				fmt.Fprintf(cmd.ErrOrStderr(), "- %s (%s)\n", selected.Name, selected.Address)
+			}
+
 			// For structured formats, print the selected device.
 			switch format {
 			case output.FormatTSV:
