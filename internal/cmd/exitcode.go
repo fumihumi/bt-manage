@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"runtime"
 
 	"github.com/fumihumi/bt-manage/internal/core"
@@ -49,12 +48,6 @@ func exitCodeFor(err error) int {
 }
 
 func prettyError(err error) string {
-	var dm core.ErrDependencyMissing
-	if errors.As(err, &dm) {
-		if dm.Dependency != "" {
-			return fmt.Sprintf("missing dependency: %s", dm.Dependency)
-		}
-		return "missing dependency"
-	}
+	err = userFacingError(err)
 	return err.Error()
 }
