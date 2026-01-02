@@ -41,26 +41,30 @@ func TestModel_Filter_DownUp(t *testing.T) {
 
 func TestMultiModelToggleAndConfirm(t *testing.T) {
 	devices := []core.Device{
-		{Name: "A", Address: "AA"},
-		{Name: "B", Address: "BB"},
+		{Name: "A", Address: "AA", Connected: true},
+		{Name: "B", Address: "BB", Connected: false},
+		{Name: "C", Address: "CC", Connected: false},
 	}
 
 	m := newMultiModel("Connect", devices)
-
-	// Toggle first item.
-	mm, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
-	m = mm.(multiModel)
-	if !m.selectedMap["AA"] {
-		t.Fatalf("expected AA to be selected")
+	if len(m.filtered) != 2 {
+		t.Fatalf("expected connected device to be filtered out; filtered=%d", len(m.filtered))
 	}
 
-	// Move down and toggle second.
+	// Toggle first visible item (B).
+	mm, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+	m = mm.(multiModel)
+	if !m.selectedMap["BB"] {
+		t.Fatalf("expected BB to be selected")
+	}
+
+	// Move down and toggle second (C).
 	mm, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
 	m = mm.(multiModel)
 	mm, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
 	m = mm.(multiModel)
-	if !m.selectedMap["BB"] {
-		t.Fatalf("expected BB to be selected")
+	if !m.selectedMap["CC"] {
+		t.Fatalf("expected CC to be selected")
 	}
 
 	// Confirm.

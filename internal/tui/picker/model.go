@@ -1,6 +1,7 @@
 package picker
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -32,9 +33,45 @@ func newModel(title string, devices []core.Device) model {
 	in.CharLimit = 256
 	in.Width = 30
 
+	filteredByState := make([]core.Device, 0, len(devices))
+	for _, d := range devices {
+		switch title {
+		case "Connect":
+			if d.Connected {
+				continue
+			}
+		case "Disconnect":
+			if !d.Connected {
+				continue
+			}
+		}
+		filteredByState = append(filteredByState, d)
+	}
+
+	sorted := append([]core.Device(nil), filteredByState...)
+	sort.SliceStable(sorted, func(i, j int) bool {
+		a := sorted[i]
+		b := sorted[j]
+
+		// Connect: prefer disconnected first.
+		if title == "Connect" {
+			if a.Connected != b.Connected {
+				return !a.Connected && b.Connected
+			}
+		}
+		// Disconnect: prefer connected first.
+		if title == "Disconnect" {
+			if a.Connected != b.Connected {
+				return a.Connected && !b.Connected
+			}
+		}
+
+		return strings.ToLower(a.Name) < strings.ToLower(b.Name)
+	})
+
 	m := model{
 		title:   title,
-		devices: append([]core.Device(nil), devices...),
+		devices: sorted,
 		input:   in,
 		index:   0,
 	}
