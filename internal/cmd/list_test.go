@@ -50,3 +50,19 @@ func TestListConnectedFlagFiltersDevices(t *testing.T) {
 		t.Fatalf("output should include connected devices A and C; got=%s", got)
 	}
 }
+
+func TestListConnectedAndDisconnectedAreMutuallyExclusive(t *testing.T) {
+	e := env{
+		bluetooth: fakeBluetooth{devices: []core.Device{{Name: "A", Address: "AA", Connected: true}}},
+		isTTY:     func() bool { return false },
+	}
+
+	cmd := newListCmd(e)
+	cmd.SetArgs([]string{"--connected", "--disconnected"})
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+
+	if err := cmd.Execute(); err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+}

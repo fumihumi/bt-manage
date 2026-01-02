@@ -18,6 +18,11 @@ func newListCmd(e env) *cobra.Command {
 			formatStr, _ := cmd.Flags().GetString("format")
 			noHeader, _ := cmd.Flags().GetBool("no-header")
 			onlyConnected, _ := cmd.Flags().GetBool("connected")
+			onlyDisconnected, _ := cmd.Flags().GetBool("disconnected")
+
+			if onlyConnected && onlyDisconnected {
+				return fmt.Errorf("--connected and --disconnected are mutually exclusive")
+			}
 
 			if namesOnly {
 				// Keep behaviour simple and predictable.
@@ -50,6 +55,16 @@ func newListCmd(e env) *cobra.Command {
 				devices = filtered
 			}
 
+			if onlyDisconnected {
+				filtered := make([]core.Device, 0, len(devices))
+				for _, d := range devices {
+					if !d.Connected {
+						filtered = append(filtered, d)
+					}
+				}
+				devices = filtered
+			}
+
 			if namesOnly {
 				for _, d := range devices {
 					if d.Name == "" {
@@ -75,6 +90,7 @@ func newListCmd(e env) *cobra.Command {
 	cmd.Flags().StringP("format", "f", "tsv", "Output format (tsv|json)")
 	cmd.Flags().BoolP("no-header", "H", false, "Do not print header (tsv only)")
 	cmd.Flags().BoolP("connected", "c", false, "Show connected devices only")
+	cmd.Flags().BoolP("disconnected", "d", false, "Show disconnected devices only")
 	cmd.Flags().BoolP("names-only", "N", false, "Print device names only (one per line)")
 
 	return cmd

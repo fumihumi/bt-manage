@@ -47,6 +47,33 @@ func TestListNamesOnlyPrintsOneNamePerLine(t *testing.T) {
 	}
 }
 
+func TestListDisconnectedFiltersDevices(t *testing.T) {
+	e := env{
+		bluetooth: fakeBluetooth2{devices: []core.Device{
+			{Name: "Keyboard", Address: "AA", Connected: true},
+			{Name: "Mouse", Address: "BB", Connected: false},
+		}},
+		isTTY: func() bool { return false },
+	}
+
+	cmd := newListCmd(e)
+	cmd.SetArgs([]string{"--names-only", "--disconnected"})
+
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&bytes.Buffer{})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error: %v", err)
+	}
+
+	got := out.String()
+	want := "Mouse\n"
+	if got != want {
+		t.Fatalf("unexpected output\nwant=%q\n got=%q", want, got)
+	}
+}
+
 func TestListNamesOnlyRejectsFormatAndNoHeader(t *testing.T) {
 	e := env{
 		bluetooth: fakeBluetooth2{devices: []core.Device{{Name: "Keyboard", Address: "AA"}}},

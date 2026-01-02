@@ -46,6 +46,13 @@ bt-manage list --connected
 bt-manage list -c
 ```
 
+Show disconnected devices only:
+
+```bash
+bt-manage list --disconnected
+bt-manage list -d
+```
+
 Print names only (one per line):
 
 ```bash
