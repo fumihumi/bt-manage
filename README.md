@@ -1,39 +1,45 @@
 # bt-manage
 
-macOS で Bluetooth デバイスの **一覧/接続/切断** を行うための CLI（必要に応じて TUI で選択）です。
+`bt-manage` is a small CLI tool for managing Bluetooth device connections on **macOS**.
 
-- 対応OS: macOS
-- バックエンド: `blueutil`（外部コマンド）
+It can:
 
-## インストール
+- list paired devices
+- connect / disconnect by name (or prefix)
+- optionally prompt you with a built-in TUI picker when input is omitted/ambiguous
 
-### 前提: blueutil のインストール
+## Requirements
 
-`bt-manage` は内部で `blueutil` を呼び出します。
+- macOS
+- [`blueutil`](https://github.com/toy/blueutil) available in your `PATH`
 
-Homebrew を使う場合:
+## Installation
+
+### Install `blueutil`
+
+If you use Homebrew:
 
 ```bash
 brew install blueutil
 ```
 
-### bt-manage のビルド
+### Build `bt-manage`
 
 ```bash
 go build ./cmd/bt-manage
 ```
 
-生成された `bt-manage` を PATH の通った場所に置いてください。
+Move the resulting `bt-manage` binary to a directory in your `PATH`.
 
-## 使い方
+## Usage
 
-### デバイス一覧
+### List devices
 
 ```bash
 bt-manage list
 ```
 
-出力形式:
+Output formats:
 
 ```bash
 bt-manage list --format tsv
@@ -41,16 +47,16 @@ bt-manage list --format json
 bt-manage list --format tsv --no-header
 ```
 
-### 接続
+### Connect
 
 ```bash
 bt-manage connect <name-or-prefix>
 ```
 
-- `<name-or-prefix>` を省略すると、TTY の場合は TUI picker が起動します。
-- 複数候補にマッチした場合も、TTY なら picker で選択します。
+- If `<name-or-prefix>` is omitted and stdin is a TTY, a TUI picker is shown.
+- If multiple devices match the prefix and stdin is a TTY, the picker is shown.
 
-出力形式:
+Output formats:
 
 ```bash
 bt-manage connect <name-or-prefix> --format tsv
@@ -58,13 +64,13 @@ bt-manage connect <name-or-prefix> --format json
 bt-manage connect <name-or-prefix> --no-header
 ```
 
-### 切断
+### Disconnect
 
 ```bash
 bt-manage disconnect <name-or-prefix>
 ```
 
-出力形式:
+Output formats:
 
 ```bash
 bt-manage disconnect <name-or-prefix> --format tsv
@@ -72,46 +78,46 @@ bt-manage disconnect <name-or-prefix> --format json
 bt-manage disconnect <name-or-prefix> --no-header
 ```
 
-### インタラクティブ動作の強制/抑制
+### Force interactive mode
 
 ```bash
 bt-manage connect --interactive
 bt-manage disconnect --interactive
 ```
 
-- 非TTY環境で `--interactive` を指定した場合はエラーになります。
+- Using `--interactive` in a non-TTY environment results in an error.
 
-### ドライラン
+### Dry run
 
 ```bash
 bt-manage connect <name-or-prefix> --dry-run
 bt-manage disconnect <name-or-prefix> --dry-run
 ```
 
-- 実行はせず、**機械可読な出力のみ**を行います。
+- Does not execute the action; prints **machine-readable output only**.
 
-### verbose
+### Verbose
 
 ```bash
 bt-manage --verbose list
 bt-manage --verbose connect <name-or-prefix>
 ```
 
-- 内部で実行する `blueutil` コマンドを stderr に出します。
+- Prints invoked `blueutil` commands to stderr.
 
-### バージョン
+### Version
 
 ```bash
 bt-manage version
 ```
 
-## 開発
+## Development
 
 ```bash
 go test ./...
 ```
 
-## 既知の制約
+## Known limitations
 
-- macOS 専用です。
-- `blueutil` の出力仕様に依存します（環境によっては出力が異なる可能性があります）。
+- macOS only.
+- Behaviour depends on `blueutil` output (it may vary across environments).
