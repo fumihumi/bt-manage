@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/fumihumi/bt-manage/internal/core"
+	"github.com/fumihumi/bt-manage/internal/output"
 	"github.com/fumihumi/bt-manage/internal/platform/macos/blueutil"
 	"github.com/fumihumi/bt-manage/internal/platform/tty"
 	"github.com/fumihumi/bt-manage/internal/tui/picker"
@@ -25,6 +26,12 @@ func newDisconnectCmd() *cobra.Command {
 			exact, _ := cmd.Flags().GetBool("exact")
 			interactive, _ := cmd.Flags().GetBool("interactive")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			formatStr, _ := cmd.Flags().GetString("format")
+
+			format, err := output.ParseFormat(formatStr)
+			if err != nil {
+				return err
+			}
 
 			isTTY := tty.IsInteractive()
 			if interactive && !isTTY {
@@ -48,18 +55,27 @@ func newDisconnectCmd() *cobra.Command {
 				return err
 			}
 
-			if dryRun {
-				fmt.Fprintf(cmd.OutOrStdout(), "DRY-RUN: disconnect %s (%s)\n", selected.Name, selected.Address)
-				return nil
+			switch format {
+			case output.FormatTSV:
+				if dryRun {
+					fmt.Fprintln(cmd.OutOrStdout(), "DRY-RUN")
+				}
+				return output.WriteTSV(cmd.OutOrStdout(), []core.Device{selected}, true)
+			case output.FormatJSON:
+				if dryRun {
+					fmt.Fprintln(cmd.OutOrStdout(), "DRY-RUN")
+				}
+				return output.WriteJSON(cmd.OutOrStdout(), []core.Device{selected})
+			default:
+				return fmt.Errorf("unsupported format")
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "disconnected: %s (%s)\n", selected.Name, selected.Address)
-			return nil
 		},
 	}
 
 	cmd.Flags().Bool("exact", false, "Match device name exactly")
 	cmd.Flags().Bool("interactive", false, "Always use interactive picker (TTY required)")
 	cmd.Flags().Bool("dry-run", false, "Print what would be executed without disconnecting")
+	cmd.Flags().String("format", "tsv", "Output format (tsv|json)")
 
 	return cmd
 }
