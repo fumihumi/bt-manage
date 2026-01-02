@@ -91,6 +91,42 @@ func (m multiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.input.Width = min(50, max(20, msg.Width-10))
 		return m, nil
 	case tea.KeyMsg:
+		// Prefer KeyType-based handling for non-text keys so that focused textinput
+		// doesn't swallow them on some terminals.
+		switch msg.Type {
+		case tea.KeyCtrlC, tea.KeyEsc:
+			m.canceled = true
+			m.chosen = false
+			return m, tea.Quit
+		case tea.KeyEnter:
+			m.selected = m.selected[:0]
+			for _, d := range m.filtered {
+				if m.selectedMap[d.Address] {
+					m.selected = append(m.selected, d)
+				}
+			}
+			m.chosen = true
+			return m, tea.Quit
+		case tea.KeyUp:
+			if m.index > 0 {
+				m.index--
+			}
+			return m, nil
+		case tea.KeyDown:
+			if m.index < len(m.filtered)-1 {
+				m.index++
+			}
+			return m, nil
+		case tea.KeySpace:
+			if len(m.filtered) == 0 {
+				return m, nil
+			}
+			d := m.filtered[m.index]
+			m.selectedMap[d.Address] = !m.selectedMap[d.Address]
+			return m, nil
+		}
+
+		// Fallback for terminals that report keys as strings.
 		switch msg.String() {
 		case "ctrl+c", "esc":
 			m.canceled = true
@@ -120,7 +156,6 @@ func (m multiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			d := m.filtered[m.index]
-			// Address is used as a stable key.
 			m.selectedMap[d.Address] = !m.selectedMap[d.Address]
 			return m, nil
 		}
