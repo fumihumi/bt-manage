@@ -65,11 +65,11 @@ func newDisconnectCmd(e env) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().Bool("exact", false, "Match device name exactly")
-	cmd.Flags().Bool("interactive", false, "Always use interactive picker (TTY required)")
-	cmd.Flags().Bool("dry-run", false, "Do not disconnect; only resolve and print the target device")
-	cmd.Flags().String("format", "tsv", "Output format (tsv|json)")
-	cmd.Flags().Bool("no-header", false, "Do not print header (tsv only)")
+	cmd.Flags().BoolP("exact", "e", false, "Match device name exactly")
+	cmd.Flags().BoolP("interactive", "i", false, "Always use interactive picker (TTY required)")
+	cmd.Flags().BoolP("dry-run", "n", false, "Do not disconnect; only resolve and print the target device")
+	cmd.Flags().StringP("format", "f", "tsv", "Output format (tsv|json)")
+	cmd.Flags().BoolP("no-header", "H", false, "Do not print header (tsv only)")
 
 	return cmd
 }

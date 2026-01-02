@@ -39,8 +39,8 @@ func newListCmd(e env) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("format", "tsv", "Output format (tsv|json)")
-	cmd.Flags().Bool("no-header", false, "Do not print header (tsv only)")
+	cmd.Flags().StringP("format", "f", "tsv", "Output format (tsv|json)")
+	cmd.Flags().BoolP("no-header", "H", false, "Do not print header (tsv only)")
 
 	return cmd
 }
