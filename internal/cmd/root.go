@@ -15,37 +15,69 @@ type env struct {
 	bluetooth core.BluetoothPort
 	picker    core.PickerPort
 	isTTY     func() bool
+	verbose   bool
 }
 
-func defaultEnv() env {
-	e := env{
-		bluetooth: blueutil.Client{},
+func defaultEnv(verbose bool) env {
+	client := blueutil.Client{Verbose: verbose, Logger: os.Stderr}
+	return env{
+		bluetooth: client,
+		picker:    picker.Picker{},
 		isTTY:     tty.IsInteractive,
+		verbose:   verbose,
 	}
-	// picker は "TTYかつ--interactive" のときだけ使うが、生成は安価なのでここで固定。
-	e.picker = picker.Picker{}
-	return e
 }
 
 func newRootCmd() *cobra.Command {
-	e := defaultEnv()
-
 	cmd := &cobra.Command{
 		Use:           "bt-manage",
 		Short:         "Switch Bluetooth device connections on macOS",
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// `bt-manage` 単体実行は `list` と同義。
-			return newListCmd(e).RunE(cmd, args)
-		},
+	}
+
+	cmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose logging to stderr")
+
+	cmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		// no-op: env is built per-command in RunE below
+	}
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		verbose, _ := cmd.Flags().GetBool("verbose")
+		e := defaultEnv(verbose)
+		// `bt-manage` 単体実行は `list` と同義。
+		return newListCmd(e).RunE(cmd, args)
 	}
 
 	cmd.AddCommand(
-		newListCmd(e),
-		newConnectCmd(e),
-		newDisconnectCmd(e),
+		newListCmd(defaultEnv(false)),
+		newConnectCmd(defaultEnv(false)),
+		newDisconnectCmd(defaultEnv(false)),
+		newVersionCmd(),
 	)
+
+	// 子コマンド実行時の env を verbose に追従させるため、各コマンドの PreRun で env を差し替える。
+	for _, c := range cmd.Commands() {
+		origRunE := c.RunE
+		if origRunE == nil {
+			continue
+		}
+		c.RunE = func(cmd2 *cobra.Command, args2 []string) error {
+			verbose, _ := cmd2.Flags().GetBool("verbose")
+			e := defaultEnv(verbose)
+			// コマンド生成時の env を反映するため、ここでは再生成して実行する。
+			switch cmd2.Name() {
+			case "list":
+				return newListCmd(e).RunE(cmd2, args2)
+			case "connect":
+				return newConnectCmd(e).RunE(cmd2, args2)
+			case "disconnect":
+				return newDisconnectCmd(e).RunE(cmd2, args2)
+			default:
+				return origRunE(cmd2, args2)
+			}
+		}
+	}
 
 	return cmd
 }

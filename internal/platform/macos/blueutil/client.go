@@ -4,14 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 
 	"github.com/fumihumi/bt-manage/internal/core"
 )
 
 type Client struct {
-	Exec ExecPort
-	Bin  string
+	Exec    ExecPort
+	Bin     string
+	Verbose bool
+	Logger  io.Writer
 }
 
 func (c Client) bin() string {
@@ -28,10 +31,22 @@ func (c Client) execPort() ExecPort {
 	return OSExec{}
 }
 
+func (c Client) logf(format string, args ...any) {
+	if !c.Verbose {
+		return
+	}
+	w := c.Logger
+	if w == nil {
+		return
+	}
+	fmt.Fprintf(w, format, args...)
+}
+
 func (c Client) List(ctx context.Context) ([]core.Device, error) {
 	if _, err := lookPath(c.bin()); err != nil {
 		return nil, core.ErrDependencyMissing{Dependency: c.bin()}
 	}
+	c.logf("blueutil: %s --paired --format json\n", c.bin())
 	stdout, _, err := c.execPort().Run(ctx, c.bin(), "--paired", "--format", "json")
 	if err != nil {
 		return nil, c.mapExecErr(err)
@@ -43,7 +58,9 @@ func (c Client) Connect(ctx context.Context, address string) error {
 	if _, err := lookPath(c.bin()); err != nil {
 		return core.ErrDependencyMissing{Dependency: c.bin()}
 	}
-	_, _, err := c.execPort().Run(ctx, c.bin(), "--connect", denormalizeAddress(address))
+	addr := denormalizeAddress(address)
+	c.logf("blueutil: %s --connect %s\n", c.bin(), addr)
+	_, _, err := c.execPort().Run(ctx, c.bin(), "--connect", addr)
 	if err != nil {
 		return c.mapExecErr(err)
 	}
@@ -54,7 +71,9 @@ func (c Client) Disconnect(ctx context.Context, address string) error {
 	if _, err := lookPath(c.bin()); err != nil {
 		return core.ErrDependencyMissing{Dependency: c.bin()}
 	}
-	_, _, err := c.execPort().Run(ctx, c.bin(), "--disconnect", denormalizeAddress(address))
+	addr := denormalizeAddress(address)
+	c.logf("blueutil: %s --disconnect %s\n", c.bin(), addr)
+	_, _, err := c.execPort().Run(ctx, c.bin(), "--disconnect", addr)
 	if err != nil {
 		return c.mapExecErr(err)
 	}
