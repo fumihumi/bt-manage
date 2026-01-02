@@ -7,7 +7,7 @@ import (
 	"github.com/fumihumi/bt-manage/internal/core"
 	"github.com/fumihumi/bt-manage/internal/platform/macos/blueutil"
 	"github.com/fumihumi/bt-manage/internal/platform/tty"
-	"github.com/fumihumi/bt-manage/internal/platform/ui/nopicker"
+	"github.com/fumihumi/bt-manage/internal/tui/picker"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +31,12 @@ func newConnectCmd() *cobra.Command {
 				return fmt.Errorf("--interactive requires a TTY")
 			}
 
-			c := core.Connector{Bluetooth: blueutil.Client{}, Picker: nopicker.Picker{}}
+			var pk core.PickerPort
+			if interactive && isTTY {
+				pk = picker.Picker{}
+			}
+
+			c := core.Connector{Bluetooth: blueutil.Client{}, Picker: pk}
 			selected, err := c.ConnectByNameOrInteractive(context.Background(), core.ConnectParams{
 				Name:        name,
 				Exact:       exact,
