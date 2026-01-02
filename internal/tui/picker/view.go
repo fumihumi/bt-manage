@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/fumihumi/bt-manage/internal/core"
 )
 
 func (m model) View() string {
@@ -13,17 +14,23 @@ func (m model) View() string {
 	titleStyle := lipgloss.NewStyle().Bold(true)
 	selectedStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true)
 	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	metaStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("7"))
 
 	b.WriteString(titleStyle.Render(m.title))
 	b.WriteString("\n")
-	b.WriteString(dimStyle.Render("type to filter • ↑/↓ (j/k) move • enter select • esc cancel"))
+	b.WriteString(dimStyle.Render("type to filter (name/address) • ↑/↓ (j/k) move • enter select • esc cancel"))
 	b.WriteString("\n\n")
 
 	b.WriteString(m.input.View())
 	b.WriteString("\n\n")
 
 	if len(m.filtered) == 0 {
-		b.WriteString(dimStyle.Render("(no matches)"))
+		q := strings.TrimSpace(m.input.Value())
+		if q == "" {
+			b.WriteString(dimStyle.Render("(no devices found)"))
+		} else {
+			b.WriteString(dimStyle.Render(fmt.Sprintf("(no matches for %q)", q)))
+		}
 		b.WriteString("\n")
 		return b.String()
 	}
@@ -37,16 +44,41 @@ func (m model) View() string {
 	end := min(len(m.filtered), start+maxItems)
 
 	for i := start; i < end; i++ {
+		d := m.filtered[i]
 		prefix := "  "
-		line := fmt.Sprintf("%s", m.filtered[i].Name)
+		nameLine := d.Name
+		if nameLine == "" {
+			nameLine = "(unknown)"
+		}
+		meta := deviceMeta(d)
+
 		if i == m.index {
 			prefix = "> "
-			line = selectedStyle.Render(line)
+			nameLine = selectedStyle.Render(nameLine)
+			meta = selectedStyle.Render(meta)
+		} else {
+			meta = metaStyle.Render(meta)
 		}
+
 		b.WriteString(prefix)
-		b.WriteString(line)
+		b.WriteString(nameLine)
+		if meta != "" {
+			b.WriteString("\n   ")
+			b.WriteString(meta)
+		}
 		b.WriteString("\n")
 	}
 
 	return b.String()
+}
+
+func deviceMeta(d core.Device) string {
+	parts := make([]string, 0, 2)
+	if strings.TrimSpace(d.Address) != "" {
+		parts = append(parts, d.Address)
+	}
+	if d.Connected {
+		parts = append(parts, "connected")
+	}
+	return strings.Join(parts, " • ")
 }

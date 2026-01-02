@@ -97,7 +97,7 @@ func (m *model) applyFilter() {
 
 	out := make([]core.Device, 0, len(m.devices))
 	for _, d := range m.devices {
-		if strings.Contains(strings.ToLower(d.Name), q) {
+		if strings.Contains(deviceSearchKey(d), q) {
 			out = append(out, d)
 		}
 	}
@@ -105,6 +105,12 @@ func (m *model) applyFilter() {
 	if m.index >= len(m.filtered) {
 		m.index = max(0, len(m.filtered)-1)
 	}
+}
+
+func deviceSearchKey(d core.Device) string {
+	// Lowercase, concatenated for simple substring match.
+	// Address may be empty depending on backend; keep it safe.
+	return strings.ToLower(strings.TrimSpace(d.Name + " " + d.Address))
 }
 
 func min(a, b int) int {
