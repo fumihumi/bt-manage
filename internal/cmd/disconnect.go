@@ -16,6 +16,7 @@ func newDisconnectCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "disconnect [<Name>]",
 		Short: "Disconnect a Bluetooth device",
+		Long:  "Disconnect a Bluetooth device. Output is a single device in the selected format (json is a 1-element array, consistent with 'list').",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := ""
