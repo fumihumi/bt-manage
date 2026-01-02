@@ -29,6 +29,9 @@ func (c Client) execPort() ExecPort {
 }
 
 func (c Client) List(ctx context.Context) ([]core.Device, error) {
+	if _, err := lookPath(c.bin()); err != nil {
+		return nil, core.ErrDependencyMissing{Dependency: c.bin()}
+	}
 	stdout, _, err := c.execPort().Run(ctx, c.bin(), "--paired", "--format", "json")
 	if err != nil {
 		return nil, c.mapExecErr(err)
@@ -37,6 +40,9 @@ func (c Client) List(ctx context.Context) ([]core.Device, error) {
 }
 
 func (c Client) Connect(ctx context.Context, address string) error {
+	if _, err := lookPath(c.bin()); err != nil {
+		return core.ErrDependencyMissing{Dependency: c.bin()}
+	}
 	_, _, err := c.execPort().Run(ctx, c.bin(), "--connect", denormalizeAddress(address))
 	if err != nil {
 		return c.mapExecErr(err)
@@ -45,6 +51,9 @@ func (c Client) Connect(ctx context.Context, address string) error {
 }
 
 func (c Client) Disconnect(ctx context.Context, address string) error {
+	if _, err := lookPath(c.bin()); err != nil {
+		return core.ErrDependencyMissing{Dependency: c.bin()}
+	}
 	_, _, err := c.execPort().Run(ctx, c.bin(), "--disconnect", denormalizeAddress(address))
 	if err != nil {
 		return c.mapExecErr(err)

@@ -58,3 +58,18 @@ func TestClient_DependencyMissing(t *testing.T) {
 		t.Fatalf("expected ErrDependencyMissing, got %T: %v", err, err)
 	}
 }
+
+func TestClient_DependencyMissing_ByLookPath(t *testing.T) {
+	prev := lookPath
+	lookPath = func(file string) (string, error) {
+		return "", exec.ErrNotFound
+	}
+	t.Cleanup(func() { lookPath = prev })
+
+	c := Client{Exec: &fakeExec{}, Bin: "blueutil"}
+	_, err := c.List(context.Background())
+	var dm core.ErrDependencyMissing
+	if !errors.As(err, &dm) {
+		t.Fatalf("expected ErrDependencyMissing, got %T: %v", err, err)
+	}
+}
