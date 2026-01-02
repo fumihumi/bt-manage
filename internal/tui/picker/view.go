@@ -18,7 +18,7 @@ func (m model) View() string {
 
 	b.WriteString(titleStyle.Render(m.title))
 	b.WriteString("\n")
-	b.WriteString(dimStyle.Render("type to filter (name/address) • ↑/↓ (j/k) move • enter select • esc cancel"))
+	b.WriteString(dimStyle.Render("type to filter (name/address) • ↑/↓ (ctrl+p/ctrl+n) move • enter select • esc cancel"))
 	b.WriteString("\n\n")
 
 	b.WriteString(m.input.View())

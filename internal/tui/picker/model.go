@@ -66,12 +66,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.selected = m.filtered[m.index]
 			m.chosen = true
 			return m, tea.Quit
-		case "up", "k":
+		case "up", "ctrl+p":
 			if m.index > 0 {
 				m.index--
 			}
 			return m, nil
-		case "down", "j":
+		case "down", "ctrl+n":
 			if m.index < len(m.filtered)-1 {
 				m.index++
 			}
