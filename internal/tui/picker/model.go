@@ -65,6 +65,12 @@ func newModel(title string, devices []core.Device) model {
 				return a.Connected && !b.Connected
 			}
 		}
+		// Repair: prefer connected first (paired-device selection).
+		if strings.HasPrefix(title, "Repair:") {
+			if a.Connected != b.Connected {
+				return a.Connected && !b.Connected
+			}
+		}
 
 		return strings.ToLower(a.Name) < strings.ToLower(b.Name)
 	})
