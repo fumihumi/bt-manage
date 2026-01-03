@@ -12,7 +12,7 @@ type Picker struct{}
 func (p Picker) PickDevice(ctx context.Context, title string, devices []core.Device) (core.Device, error) {
 	m := newModel(title, devices)
 
-	program := tea.NewProgram(m, tea.WithContext(ctx))
+	program := tea.NewProgram(m, tea.WithContext(ctx), tea.WithAltScreen())
 	res, err := program.Run()
 	if err != nil {
 		return core.Device{}, err
@@ -31,7 +31,7 @@ func (p Picker) PickDevice(ctx context.Context, title string, devices []core.Dev
 func (p Picker) PickDevices(ctx context.Context, title string, devices []core.Device) ([]core.Device, error) {
 	m := newMultiModel(title, devices)
 
-	program := tea.NewProgram(m, tea.WithContext(ctx))
+	program := tea.NewProgram(m, tea.WithContext(ctx), tea.WithAltScreen())
 	res, err := program.Run()
 	if err != nil {
 		return nil, err

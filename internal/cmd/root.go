@@ -53,6 +53,8 @@ func newRootCmd() *cobra.Command {
 		newListCmd(defaultEnv(false)),
 		newConnectCmd(defaultEnv(false)),
 		newDisconnectCmd(defaultEnv(false)),
+		newPairCmd(defaultEnv(false)),
+		newRepairCmd(defaultEnv(false)),
 		newVersionCmd(),
 	)
 
@@ -73,6 +75,10 @@ func newRootCmd() *cobra.Command {
 				return newConnectCmd(e).RunE(cmd2, args2)
 			case "disconnect":
 				return newDisconnectCmd(e).RunE(cmd2, args2)
+			case "pair":
+				return newPairCmd(e).RunE(cmd2, args2)
+			case "repair":
+				return newRepairCmd(e).RunE(cmd2, args2)
 			default:
 				return origRunE(cmd2, args2)
 			}

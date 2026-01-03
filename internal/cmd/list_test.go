@@ -19,6 +19,14 @@ func (f fakeBluetooth) List(ctx context.Context) ([]core.Device, error) {
 
 func (f fakeBluetooth) Connect(ctx context.Context, address string) error { return nil }
 func (f fakeBluetooth) Disconnect(ctx context.Context, address string) error { return nil }
+func (f fakeBluetooth) Pair(ctx context.Context, address string, pin string) error { return nil }
+func (f fakeBluetooth) Unpair(ctx context.Context, address string) error { return nil }
+func (f fakeBluetooth) Inquiry(ctx context.Context, durationSeconds int) ([]core.Device, error) {
+	return nil, nil
+}
+func (f fakeBluetooth) WaitConnect(ctx context.Context, address string, timeoutSeconds int) error { return nil }
+func (f fakeBluetooth) IsConnected(ctx context.Context, address string) (bool, error) { return false, nil }
+func (f fakeBluetooth) ConnectedDevices(ctx context.Context) ([]core.Device, error) { return nil, nil }
 
 func TestListConnectedFlagFiltersDevices(t *testing.T) {
 	e := env{

@@ -19,6 +19,14 @@ func (f fakeBluetooth2) List(ctx context.Context) ([]core.Device, error) {
 
 func (f fakeBluetooth2) Connect(ctx context.Context, address string) error { return nil }
 func (f fakeBluetooth2) Disconnect(ctx context.Context, address string) error { return nil }
+func (f fakeBluetooth2) Pair(ctx context.Context, address string, pin string) error { return nil }
+func (f fakeBluetooth2) Unpair(ctx context.Context, address string) error { return nil }
+func (f fakeBluetooth2) Inquiry(ctx context.Context, durationSeconds int) ([]core.Device, error) {
+	return nil, nil
+}
+func (f fakeBluetooth2) WaitConnect(ctx context.Context, address string, timeoutSeconds int) error { return nil }
+func (f fakeBluetooth2) IsConnected(ctx context.Context, address string) (bool, error) { return false, nil }
+func (f fakeBluetooth2) ConnectedDevices(ctx context.Context) ([]core.Device, error) { return nil, nil }
 
 func TestListNamesOnlyPrintsOneNamePerLine(t *testing.T) {
 	e := env{
