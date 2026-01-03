@@ -38,6 +38,15 @@ func newRootCmd() *cobra.Command {
 
 	cmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose logging to stderr")
 
+	// Allow `bt-manage -c` etc to behave like `bt-manage list -c`.
+	// These flags are only used when root falls back to `list`.
+	cmd.PersistentFlags().BoolP("connected", "c", false, "(list) Show connected devices only")
+	cmd.PersistentFlags().BoolP("disconnected", "d", false, "(list) Show disconnected devices only")
+	cmd.PersistentFlags().BoolP("names-only", "N", false, "(list) Print device names only (one per line)")
+	cmd.PersistentFlags().StringP("format", "f", "tsv", "(list) Output format (tsv|json)")
+	cmd.PersistentFlags().BoolP("no-header", "H", false, "(list) Do not print header (tsv only)")
+	cmd.PersistentFlags().Bool("paired", true, "(list) List paired devices (default)")
+
 	cmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		// no-op: env is built per-command in RunE below
 	}
@@ -45,8 +54,34 @@ func newRootCmd() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		verbose, _ := cmd.Flags().GetBool("verbose")
 		e := defaultEnv(verbose)
-		// `bt-manage` 単体実行は `list` と同義。
-		return newListCmd(e).RunE(cmd, args)
+		// `bt-manage` 単体実行は `list` と同義。root のフラグも list に引き継ぐ。
+		listCmd := newListCmd(e)
+		listCmd.SetArgs(args)
+		listCmd.SetOut(cmd.OutOrStdout())
+		listCmd.SetErr(cmd.ErrOrStderr())
+
+		// Copy relevant persistent flags to list flags.
+		copyBoolFlag := func(name string) {
+			if cmd.Flags().Changed(name) {
+				v, _ := cmd.Flags().GetBool(name)
+				_ = listCmd.Flags().Set(name, fmt.Sprintf("%v", v))
+			}
+		}
+		copyStringFlag := func(name string) {
+			if cmd.Flags().Changed(name) {
+				v, _ := cmd.Flags().GetString(name)
+				_ = listCmd.Flags().Set(name, v)
+			}
+		}
+
+		copyBoolFlag("connected")
+		copyBoolFlag("disconnected")
+		copyBoolFlag("names-only")
+		copyBoolFlag("no-header")
+		copyBoolFlag("paired")
+		copyStringFlag("format")
+
+		return listCmd.ExecuteContext(cmd.Context())
 	}
 
 	cmd.AddCommand(

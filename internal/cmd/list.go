@@ -19,6 +19,8 @@ func newListCmd(e env) *cobra.Command {
 			noHeader, _ := cmd.Flags().GetBool("no-header")
 			onlyConnected, _ := cmd.Flags().GetBool("connected")
 			onlyDisconnected, _ := cmd.Flags().GetBool("disconnected")
+			// Currently `list` always lists paired devices. `--paired` is a compatibility/explicitness flag.
+			_, _ = cmd.Flags().GetBool("paired")
 
 			if onlyConnected && onlyDisconnected {
 				return fmt.Errorf("--connected and --disconnected are mutually exclusive")
@@ -92,6 +94,7 @@ func newListCmd(e env) *cobra.Command {
 	cmd.Flags().BoolP("connected", "c", false, "Show connected devices only")
 	cmd.Flags().BoolP("disconnected", "d", false, "Show disconnected devices only")
 	cmd.Flags().BoolP("names-only", "N", false, "Print device names only (one per line)")
+	cmd.Flags().Bool("paired", true, "List paired devices (default)")
 
 	return cmd
 }

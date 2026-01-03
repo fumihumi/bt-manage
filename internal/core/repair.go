@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sort"
 )
 
 type Repairer struct {
@@ -48,6 +49,14 @@ func (r Repairer) Repair(ctx context.Context, p RepairParams) (from Device, to D
 	if len(paired) == 0 {
 		return Device{}, Device{}, ErrNotFound{Query: ""}
 	}
+
+	// Prefer currently connected devices first for better UX.
+	sort.SliceStable(paired, func(i, j int) bool {
+		if paired[i].Connected != paired[j].Connected {
+			return paired[i].Connected && !paired[j].Connected
+		}
+		return paired[i].Name < paired[j].Name
+	})
 
 	from, err = r.Picker.PickDevice(ctx, "Repair: select paired device to remove", paired)
 	if err != nil {

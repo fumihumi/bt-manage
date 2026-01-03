@@ -7,6 +7,7 @@ It can:
 - list paired devices
 - connect / disconnect by name (or prefix)
 - optionally prompt you with a built-in TUI picker when input is omitted/ambiguous
+- **pair / repair** devices interactively (useful for flaky devices like Magic Trackpad)
 
 ## Requirements
 
@@ -39,6 +40,12 @@ Move the resulting `bt-manage` binary to a directory in your `PATH`.
 bt-manage list
 ```
 
+List paired devices explicitly (default):
+
+```bash
+bt-manage list --paired
+```
+
 Show connected devices only:
 
 ```bash
@@ -66,6 +73,15 @@ Output formats:
 bt-manage list --format tsv
 bt-manage list --format json
 bt-manage list --format tsv --no-header
+```
+
+You can also omit `list` (fallback to list):
+
+```bash
+bt-manage
+bt-manage -c
+bt-manage -N
+bt-manage --format json
 ```
 
 ### Connect
@@ -113,6 +129,42 @@ bt-manage disconnect <name-or-prefix> --format json
 bt-manage disconnect <name-or-prefix> --no-header
 ```
 
+### Pair (interactive)
+
+Use this when you already unpaired the device (manually or via other tooling) and want to re-pair + connect.
+
+```bash
+bt-manage pair --interactive
+```
+
+Notes:
+
+- Always interactive (TTY required). A streaming picker will show nearby discovered devices.
+- Internally does: `inquiry` → `pair` → `connect` (with retries + connection verification).
+
+Common options:
+
+- `--inquiry-duration <sec>`: total scan window (default: 60)
+- `--wait-connect <sec>`: wait for connection after connect (recommended: 10)
+- `--max-attempts <n>`: connect retry count (default: 3)
+- `--pin <pin>`: pass PIN if needed
+
+### Repair (interactive)
+
+Use this when the device is paired but becomes flaky (e.g. Magic Trackpad). This performs unpair + re-pair + connect.
+
+```bash
+bt-manage repair --interactive
+```
+
+Internally does: pick a *paired* device → `unpair` → `inquiry` → `pair` → `connect` (with retries + verification).
+
+You can skip unpairing (e.g. if you already removed it elsewhere):
+
+```bash
+bt-manage repair --interactive --skip-unpair
+```
+
 ### Force interactive mode
 
 ```bash
@@ -136,9 +188,12 @@ bt-manage disconnect <name-or-prefix> --dry-run
 ```bash
 bt-manage --verbose list
 bt-manage --verbose connect <name-or-prefix>
+bt-manage --verbose pair --interactive
+bt-manage --verbose repair --interactive
 ```
 
 - Prints invoked `blueutil` commands to stderr.
+- TUI picker runs in an alternate screen to reduce UI corruption when verbose logs are printed.
 
 ### Version
 

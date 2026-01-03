@@ -29,11 +29,20 @@ func newConnectCmd(e env) *cobra.Command {
 			}
 
 			exact, _ := cmd.Flags().GetBool("exact")
+			interactiveFlagSet := cmd.Flags().Changed("interactive")
 			interactive, _ := cmd.Flags().GetBool("interactive")
 			multi, _ := cmd.Flags().GetBool("multi")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			formatStr, _ := cmd.Flags().GetString("format")
 			noHeader, _ := cmd.Flags().GetBool("no-header")
+
+			// Default behaviour: interactive picker is enabled by default when Name is omitted.
+			// If Name is provided, keep the fast non-interactive behaviour unless user explicitly requested --interactive.
+			if !interactiveFlagSet {
+				if name == "" {
+					interactive = true
+				}
+			}
 
 			if multi {
 				// Multi-select is only supported in interactive mode.
@@ -139,7 +148,7 @@ func newConnectCmd(e env) *cobra.Command {
 				}
 			}
 
-			// Single-select (existing behaviour).
+			// Single-select.
 			var ctx context.Context
 			var cancel func()
 			ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
@@ -162,7 +171,6 @@ func newConnectCmd(e env) *cobra.Command {
 				fmt.Fprintf(cmd.ErrOrStderr(), "- %s (%s)\n", selected.Name, selected.Address)
 			}
 
-			// For structured formats, print the selected device.
 			switch format {
 			case output.FormatTSV:
 				return output.WriteTSV(cmd.OutOrStdout(), []core.Device{selected}, !noHeader)

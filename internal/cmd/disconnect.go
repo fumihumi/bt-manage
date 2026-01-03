@@ -29,11 +29,20 @@ func newDisconnectCmd(e env) *cobra.Command {
 			}
 
 			exact, _ := cmd.Flags().GetBool("exact")
+			interactiveFlagSet := cmd.Flags().Changed("interactive")
 			interactive, _ := cmd.Flags().GetBool("interactive")
 			multi, _ := cmd.Flags().GetBool("multi")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			formatStr, _ := cmd.Flags().GetString("format")
 			noHeader, _ := cmd.Flags().GetBool("no-header")
+
+			// Default behaviour: interactive picker is enabled by default when Name is omitted.
+			// If Name is provided, keep the fast non-interactive behaviour unless user explicitly requested --interactive.
+			if !interactiveFlagSet {
+				if name == "" {
+					interactive = true
+				}
+			}
 
 			if multi {
 				interactive = true
@@ -62,7 +71,6 @@ func newDisconnectCmd(e env) *cobra.Command {
 					return fmt.Errorf("--multi requires a TTY")
 				}
 
-				// List/Pick can take time (user interaction); no timeout.
 				devices, err := e.bluetooth.List(baseCtx)
 				if err != nil {
 					return err
@@ -102,7 +110,6 @@ func newDisconnectCmd(e env) *cobra.Command {
 
 						fmt.Fprintf(cmd.ErrOrStderr(), "- %s (%s)\n", dev.Name, dev.Address)
 
-						// Per-device timeout (independent).
 						dctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 						defer cancel()
 						err := e.bluetooth.Disconnect(dctx, dev.Address)
@@ -117,7 +124,6 @@ func newDisconnectCmd(e env) *cobra.Command {
 				}
 				wg.Wait()
 
-				// Print per-device errors, but keep going.
 				var failed []string
 				for _, r := range results {
 					if r.err != nil {
