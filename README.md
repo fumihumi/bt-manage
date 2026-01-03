@@ -18,13 +18,23 @@ It can:
 
 ### Install `blueutil`
 
+Install [`blueutil`](https://github.com/toy/blueutil) and make sure it is available in your `PATH`.
+
 If you use Homebrew:
 
 ```bash
 brew install blueutil
 ```
 
-### Build `bt-manage`
+### Install `bt-manage`
+
+Install via `go install`:
+
+```bash
+go install github.com/fumihumi/bt-manage/cmd/bt-manage@latest
+```
+
+### Build from source
 
 ```bash
 go build ./cmd/bt-manage
