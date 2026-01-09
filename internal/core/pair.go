@@ -190,11 +190,14 @@ func connectWithRetryVerify(
 	waitConnectSeconds int,
 	maxAttempts int,
 ) error {
+	const waitConnectChunkSeconds = 5
+
 	attempts := maxAttempts
 	if attempts <= 0 {
 		attempts = 3
 	}
 	var lastErr error
+	remainingWaitSeconds := waitConnectSeconds
 
 	for i := 1; i <= attempts; i++ {
 		if progressf != nil {
@@ -208,11 +211,20 @@ func connectWithRetryVerify(
 			continue
 		}
 
-		if waitConnectSeconds > 0 {
-			if progressf != nil {
-				progressf("  waiting for connection (%ds)...\n", waitConnectSeconds)
+		if remainingWaitSeconds > 0 {
+			attemptWaitSeconds := remainingWaitSeconds
+			if attemptWaitSeconds > waitConnectChunkSeconds {
+				attemptWaitSeconds = waitConnectChunkSeconds
 			}
-			if err := bluetooth.WaitConnect(ctx, address, waitConnectSeconds); err != nil {
+			if progressf != nil {
+				progressf(
+					"  waiting for connection (up to %ds now; remaining budget %ds)...\n",
+					attemptWaitSeconds,
+					remainingWaitSeconds,
+				)
+			}
+			start := time.Now()
+			if err := bluetooth.WaitConnect(ctx, address, attemptWaitSeconds); err != nil {
 				lastErr = err
 				if progressf != nil {
 					progressf("  wait-connect failed: %v\n", err)
@@ -223,7 +235,17 @@ func connectWithRetryVerify(
 						progressf("  connected devices: %d\n", len(cds))
 					}
 				}
+				elapsed := int(time.Since(start).Seconds())
+				remainingWaitSeconds -= elapsed
+				if remainingWaitSeconds < 0 {
+					remainingWaitSeconds = 0
+				}
 				continue
+			}
+			elapsed := int(time.Since(start).Seconds())
+			remainingWaitSeconds -= elapsed
+			if remainingWaitSeconds < 0 {
+				remainingWaitSeconds = 0
 			}
 		}
 

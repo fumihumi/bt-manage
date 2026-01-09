@@ -155,8 +155,8 @@ Notes:
 Common options:
 
 - `--inquiry-duration <sec>`: total scan window (default: 60)
-- `--wait-connect <sec>`: wait for connection after connect (recommended: 10)
-- `--max-attempts <n>`: connect retry count (default: 3)
+- `--wait-connect <sec>`: total time budget to wait for connection across retries (recommended: 10)
+- `--max-attempts <n>`: connect retry count (default: 6)
 - `--pin <pin>`: pass PIN if needed
 
 ### Repair (interactive)
